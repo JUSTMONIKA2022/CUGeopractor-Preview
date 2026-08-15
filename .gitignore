@@ -1,0 +1,62 @@
+# Python 基础忽略
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# 测试与工具缓存
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 密钥与本地配置（严禁提交真实密钥/凭据）
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets.json
+# 仅允许提交占位模板 .env.example
+
+# 用户导出的登录态 Cookie 样例（含敏感凭据，仅本机使用）
+cookie-example/
+
+# 本地数据（向量库、会话、知识库导入缓存）
+data/
+*.db
+*.sqlite
+*.sqlite3
+vectorstore/
+session_store/
+
+# 本地工具（如临时下载的 gh 二进制，不入库）
+tools/
+
+# 检索技能目录（环境工具，非项目代码，不入库）
+global-search/
+zhihu-search/
+
+# 开发内部记录与 IDE 规格（含开发对话痕迹，不随公开仓库发布）
+docs/错题本.md
+.trae/
+
+# 开发期内部文档（公开仓库仅保留面向使用者的文档）
+docs/feasibility-report.md
+docs/assessment-l1-session-connector.md
+docs/channel-plan.md
+docs/portal-capability-assessment.md
+docs/acceptance-checklist.md
+docs/clean-env-test-guide.md
+research/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

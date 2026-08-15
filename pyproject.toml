@@ -1,0 +1,70 @@
+# =========================================================
+# 行至大地·Geopractor —— 项目构建配置
+# 说明：本项目为"用户自配密钥 + 本地部署"的开源校园 Agent（MVP）
+# 技术栈：Python 3.11+ / OpenAI 兼容协议 / RAG / FastAPI / Typer
+# 模块化原则：app 包内按 配置/密钥/LLM/RAG/Agent/Web/CLI 分层，
+#            三形态（Web UI / CLI / Docker）共用同一套核心代码。
+# =========================================================
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geopractor"
+version = "0.1.0"
+description = "行至大地·Geopractor —— 本地部署、用户自配密钥的开源校园 Agent（MVP）"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Geopractor Contributors" }]
+keywords = ["agent", "llm", "rag", "campus", "local-first"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# 运行时依赖（刻意保持精简，降低供应链风险）
+dependencies = [
+    "openai>=1.40",          # OpenAI 兼容协议客户端（适配 DeepSeek/Qwen/Kimi/GLM/Ollama 等）
+    "pydantic-settings>=2.4",# 配置加载（.env / 默认值）
+    "fastapi>=0.115",        # 本地 Web UI 服务
+    "uvicorn[standard]>=0.30",
+    "typer>=0.12",           # CLI 入口
+    "chromadb>=0.5",         # 本地向量库（RAG 检索）
+    "pypdf>=4.0",            # PDF 文档解析（用户自备数据源）
+    "cryptography>=42.0",    # 密钥本机加密存储（Fernet + PBKDF2）
+    "PyYAML>=6.0",           # 连接器配置文件解析（data/connectors.yaml）
+    "httpx>=0.27",           # HTTP 校园连接器请求（同时支撑 FastAPI 测试）
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",           # FastAPI TestClient 依赖
+]
+# 贴吧网页版已改版为 JS 渲染（CSR），纯 HTTP 抓不到帖子；
+# 安装本组后可启用 Playwright 真实浏览器渲染（连接器优先复用系统 Chrome，
+# 无需下载内核：`playwright install chrome` 或直接使用系统已装 Chrome）
+render = [
+    "playwright>=1.45",
+]
+
+[project.scripts]
+# 统一 CLI 入口：安装后可直接执行 `geopractor --help`
+geopractor = "app.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["app*", "connectors*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"

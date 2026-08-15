@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>行至大地·Geopractor</title>
+  <!-- 纯本地页面，不引用任何外部 CDN，保证离线可用且不产生第三方请求 -->
+  <style>
+    :root { --bg:#f5f6f8; --card:#fff; --line:#e2e4ea; --primary:#3b6cf0; --text:#222; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background:var(--bg); color:var(--text); }
+    header { padding:16px 24px; background:var(--card); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+    header h1 { margin:0; font-size:18px; }
+    header small { color:#888; margin-left:8px; }
+    .container { max-width:960px; margin:20px auto; padding:0 16px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+    #chat { height:380px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:12px; background:#fafbfc; }
+    .msg { margin-bottom:10px; padding:8px 12px; border-radius:8px; max-width:80%; white-space:pre-wrap; word-break:break-word; }
+    .user { background:#e8efff; margin-left:auto; }
+    .bot { background:#fff; border:1px solid var(--line); }
+    .row { display:flex; gap:8px; margin-top:10px; }
+    input[type=text], input[type=password] { flex:1; padding:9px 12px; border:1px solid var(--line); border-radius:8px; }
+    button { padding:9px 16px; border:0; border-radius:8px; background:var(--primary); color:#fff; cursor:pointer; }
+    button.secondary { background:#e5e7eb; color:#333; }
+    .label { font-size:13px; color:#666; margin:10px 0 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>行至大地·Geopractor <small>本地校园 Agent（MVP）</small></h1>
+    <button class="secondary" onclick="openSettings()">设置</button>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div id="chat"></div>
+      <div class="row">
+        <input type="text" id="input" placeholder="输入问题（如：校历上本学期第一周是几号？）；以 / 开头走命令系统（如 /cache_search）" onkeydown="if(event.key==='Enter')send()" />
+        <button onclick="send()">发送</button>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#999">
+        <button class="secondary" style="font-size:12px;padding:5px 10px" onclick="reindex()">重建知识库索引</button>
+        <button class="secondary" style="font-size:12px;padding:5px 10px" onclick="append('bot', COMMAND_HELP)">命令速查</button>
+        <span id="status" style="margin-left:10px"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== 命令速查文本（与 CLI /help 对齐，供 Web 端展示） =====
+    const COMMAND_HELP =
+      '命令速查（以 / 开头的输入将走命令系统，不调 LLM）：\n' +
+      '  /cache_search             列出全部缓存渠道与状态\n' +
+      '  /cache_<渠道>             查看某渠道功能（如 /cache_ifmweb）\n' +
+      '  /cache_<渠道> <关键词|序号>  定位功能并自动打开办理网址\n' +
+      '  /back                     返回上一层（/..、/返回 同效）\n' +
+      '  /cache_refresh [渠道]     手动刷新缓存\n' +
+      '  /live                     列出全部实时命令（/live_<命令> 直接查询）\n' +
+      '  /live_catalog 勤工助学     实时查门户服务目录；/live_grade 2025-2026-2 实时查成绩\n' +
+      '  /course [学期]            直达查教务课表（如 /course 上学期）\n' +
+      '  /research <主题>          综合调研：调用 LLM 自主多来源搜集交叉验证（消耗 token）\n' +
+      '  /llm <问题>               切到 LLM 查询\n' +
+      '  /configure                交互式配置 LLM 模型与 API Key（CLI 内可用）\n' +
+      '  /login                    浏览器登录门户/教务（CLI 内触发 session-login）\n' +
+      '渠道：官网(ofcweb) 信息门户(ifmweb) 贴吧(tieba) 知乎(zhihu) B站(bilibili) 教务(jwgl)\n' +
+      '更多用法见 docs/user-guide.md 与 CLI 内 /help <主题>。';
+
+    // ===== 对话逻辑：/ 开头走命令 API，其余走 /api/chat =====
+    async function send() {
+      const input = document.getElementById('input');
+      const text = input.value.trim();
+      if (!text) return;
+      append('user', text);
+      input.value = '';
+      append('bot', '思考中…');
+      const isCmd = text.startsWith('/');
+      try {
+        // 命令系统：/xxx → /api/commands（不调 LLM，秒回）；否则 → /api/chat
+        const resp = await fetch(isCmd ? '/api/commands' : '/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(isCmd ? { command: text } : { message: text }),
+        });
+        const data = await resp.json();
+        const box = document.querySelector('#chat .msg:last-child');
+        box.textContent = isCmd ? (data.output || data.reply || '（无输出）') : (data.reply || '（无响应）');
+        if (!resp.ok) box.textContent = '⚠️ ' + (data.reply || data.error || '请求失败');
+      } catch (e) {
+        const box = document.querySelector('#chat .msg:last-child');
+        box.textContent = '⚠️ 无法连接本地服务：' + e;
+      }
+    }
+
+    function append(role, text) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+      div.textContent = text;
+      document.getElementById('chat').appendChild(div);
+      document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+    }
+
+    // ===== 配置保存：/api/config =====
+    function openSettings() {
+      const base = prompt('模型服务 Base URL（OpenAI 兼容，如 https://api.deepseek.com/v1）');
+      if (base === null) return;
+      const model = prompt('模型名称（如 deepseek-chat）');
+      if (model === null) return;
+      const key = prompt('API 密钥（留空表示保持当前值）') || '';
+      fetch('/api/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ base_url: base, model: model, api_key: key }),
+      }).then(r => r.json()).then(d => { alert(d.message); refreshStatus(); });
+    }
+
+    // ===== 索引重建：/api/knowledge/index =====
+    function reindex() {
+      fetch('/api/knowledge/index', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => { alert('已导入 ' + d.indexed + ' 个知识块'); refreshStatus(); });
+    }
+
+    // ===== 状态检查：/api/health =====
+    async function refreshStatus() {
+      try {
+        const r = await fetch('/api/health');
+        const d = await r.json();
+        const s = document.getElementById('status');
+        s.textContent = (d.configured ? '已配置模型' : '未配置模型') + ' · 知识库 ' + d.knowledge_blocks + ' 块';
+      } catch (e) {
+        document.getElementById('status').textContent = '服务状态未知';
+      }
+    }
+    refreshStatus();
+
+    // ===== 欢迎消息：能力概览（对标同行"上手即用"引导 + 示例问题） =====
+    append('bot',
+      '🌏 行至大地·Geopractor 已就绪\n' +
+      '· 试试问：「本周学校有什么通知？」「地大宿舍条件怎么样？」\n' +
+      '· 直接输入问题 → 自然语言调用 LLM（自动使用官网/门户/贴吧/知乎/B站等渠道）\n' +
+      '· 以 / 开头的输入走命令系统（不调 LLM）：/cache_search 列渠道，/cache_ifmweb 看门户功能，/course 上学期 直达查课表\n' +
+      '· 点下方「命令速查」查看全部命令；更多用法见 docs/user-guide.md');
+  </script>
+</body>
+</html>

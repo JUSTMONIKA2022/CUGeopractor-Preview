@@ -1,0 +1,131 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿# =========================================================
+# 会话型连接器配置示例（模板，无任何真实值）
+# 用途：复用"用户浏览器登录态"访问校园本人数据接口（L1 渠道）
+#
+# 已确认站点与接口（浏览器实测确认）：
+#   官网：          https://www.cug.edu.cn/              （L0，公开，走 RAG 采集）
+#   统一认证门户：  https://sfrz.cug.edu.cn/authserver/login?service=https%3A%2F%2Fi.cug.edu.cn%2Fweb%2F%3FCASLOGIN%3DCASLOGIN
+#   门户：          https://i.cug.edu.cn/web/
+#   教务系统：      https://jwgl.cug.edu.cn/jwglxt/...    （正方软件 V-9.0，需会话）
+#
+#   正方 V9 关键规律（实测）：
+#     - 功能页 URL 必须带 gnmkdm 模块码，裸访问落入"系统维护页面"
+#     - 数据接口为 POST + doType=query（部分接口），返回 JSON 分页模型
+#     - 所有接口携带会话 Cookie（JSESSIONID 等），会话失效返回 HTTP 901
+#     - 学生身份走 cxXsgrcj（成绩）；管理端才走 cxDgXscj
+#
+#   实测接口清单（全部真实调用通过）：
+#     课表：POST /jwglxt/kbcx/xskbcx_cxXsgrkb.html?gnmkdm=N2151
+#              body: xnm=&xqm=&kzlx=ck&xsdm=&kclbdm=&kclxdm=   （xsdm 可留空，服务端从会话取学号）
+#     成绩：POST /jwglxt/cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005
+#              body: xnm=&xqm=&_search=false&nd=1&queryModel.showCount=50&queryModel.currentPage=1&...
+#     考试：POST /jwglxt/kwgl/kscx_cxXsksxxIndex.html?doType=query&gnmkdm=N358105
+#              body: 同成绩分页模型
+#     学籍：POST /jwglxt/xsxxxggl/xsxxwh_cxCkDgxsxx.html?gnmkdm=N100801
+#              body: xh_id=<学号>&xh_id_code=<动态加密code>&fromXh_id=&xnm=&xqm=
+#              （xh_id_code 取页面 hidden 字段 curXh_id_code，随会话变化，见下方注）
+#     培养方案：POST /jwglxt/jxzxjhgl/jxzxjhck_cxJxzxjhckIndex.html?doType=query&gnmkdm=N153540
+#              body: jg_id=&njdm_id=&zyh_id=&... （本账号专属常量，需各自抓取）
+#
+# 使用方法：
+#   1. 复制本文件为 data/session_connectors.yaml（该目录已被 .gitignore 排除）
+#   2. 会话获取二选一：
+#      a) 【推荐】Playwright 持久会话模式：给连接器配置 `pw_profile: <目录>`，
+#         然后运行 `geopractor session-login`。注意：**教务无独立登录入口**，
+#         必须从信息门户进入（直接访问教务 URL 会显示"该页面无效"）。命令会
+#         打开统一认证门户登录页 → 你登录一次（账号密码+滑块）→ 自动在门户
+#         搜索「教务管理」进入教务系统并保存会话；之后 agent 每次请求自动复用
+#         该登录态并保活（正方会话短效约 20~60 分钟，本模式免手动导出 Cookie）。
+#      b) 手动导出：在已登录教务系统的浏览器中 F12 → Network 复制任意查询请求的
+#         Cookie 头（含 JSESSIONID 等），设为本机环境变量：
+#           PowerShell: $env:JWGL_COOKIE="name=value; name2=value2; ..."
+#         （正方会话短效，失效需重新导出；建议优先用 a 模式）
+#      绝不要写进本文件明文提交
+#   3. 学籍接口需额外环境变量 XH_ID_CODE（页面 hidden 字段 curXh_id_code，
+#      会话变化后需重新抓取更新；其他接口不受影响）
+# 红线：仅访问"你本人有权限"的接口；不破解验证码、不模拟登录、不批量抓取他人数据。
+# =========================================================
+session_connectors:
+
+  # ---- 课表 ----
+  - name: cug_course
+    description: 查询我的课程表（需要登录教务系统并配置会话；暑假学期无课表属正常）
+    url: https://jwgl.cug.edu.cn/jwglxt/kbcx/xskbcx_cxXsgrkb.html?gnmkdm=N2151
+    method: POST
+    body: "xnm=2026&xqm=3&kzlx=ck&xsdm=&kclbdm=&kclxdm="
+    # semester_params（可选）：声明后支持按学期查询——用户问题含"上学期"/"2025-2026-2"
+    # 等学期信息时，连接器会自动把 body 里对应参数替换为解析出的 xnm/xqm（如课表/成绩/考试）
+    semester_params: [xnm, xqm]
+    cookie: "{{JWGL_COOKIE}}"
+    headers:
+      Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+      X-Requested-With: XMLHttpRequest
+      Referer: https://jwgl.cug.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151
+    allowed_prefix: https://jwgl.cug.edu.cn
+    rate_limit:
+      interval: 5.0
+      jitter: 1.5
+
+  # ---- 成绩查询（xnm=2025&xqm=12 = 2025-2026-2 春季学期，近期有数据）----
+  - name: cug_grade
+    description: 查询我的课程成绩（需要登录教务系统并配置会话）
+    url: https://jwgl.cug.edu.cn/jwglxt/cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005
+    method: POST
+    body: "xnm=2025&xqm=12&_search=false&nd=1&queryModel.showCount=50&queryModel.currentPage=1&queryModel.sortName=&queryModel.sortOrder=asc&time=1"
+    cookie: "{{JWGL_COOKIE}}"
+    headers:
+      Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+      X-Requested-With: XMLHttpRequest
+      Referer: https://jwgl.cug.edu.cn/jwglxt/cjcx/cjcx_cxDgXscj.html?gnmkdm=N305005
+    allowed_prefix: https://jwgl.cug.edu.cn
+    rate_limit:
+      interval: 6.0
+      jitter: 1.5
+
+  # ---- 考试安排查询 ----
+  - name: cug_exam
+    description: 查询我的考试安排（需要登录教务系统并配置会话）
+    url: https://jwgl.cug.edu.cn/jwglxt/kwgl/kscx_cxXsksxxIndex.html?doType=query&gnmkdm=N358105
+    method: POST
+    body: "xnm=2025&xqm=12&_search=false&nd=1&queryModel.showCount=50&queryModel.currentPage=1&queryModel.sortName=&queryModel.sortOrder=asc&time=1"
+    cookie: "{{JWGL_COOKIE}}"
+    headers:
+      Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+      X-Requested-With: XMLHttpRequest
+      Referer: https://jwgl.cug.edu.cn/jwglxt/kwgl/kscx_cxXsksxxIndex.html?gnmkdm=N358105
+    allowed_prefix: https://jwgl.cug.edu.cn
+    rate_limit:
+      interval: 6.0
+      jitter: 1.5
+
+  # ---- 学籍信息（需 XH_ID_CODE 环境变量：页面 hidden 字段 curXh_id_code）----
+  - name: cug_student_info
+    description: 查询我的学籍信息（姓名/学号/学院/专业/班级等；需要登录教务系统并配置会话）
+    url: https://jwgl.cug.edu.cn/jwglxt/xsxxxggl/xsxxwh_cxCkDgxsxx.html?gnmkdm=N100801
+    method: POST
+    body: "xh_id={{CUG_USERNAME}}&xh_id_code={{XH_ID_CODE}}&fromXh_id=&xnm=2025&xqm=12"
+    cookie: "{{JWGL_COOKIE}}"
+    headers:
+      Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+      X-Requested-With: XMLHttpRequest
+      Referer: https://jwgl.cug.edu.cn/jwglxt/xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801
+    allowed_prefix: https://jwgl.cug.edu.cn
+    rate_limit:
+      interval: 6.0
+      jitter: 1.5
+
+  # ---- 培养方案（jg_id/njdm_id/zyh_id 为本账号专属常量，需各自抓取）----
+  - name: cug_training_plan
+    description: 查询我的专业培养方案（教学执行计划；需要登录教务系统并配置会话）
+    url: https://jwgl.cug.edu.cn/jwglxt/jxzxjhgl/jxzxjhck_cxJxzxjhckIndex.html?doType=query&gnmkdm=N153540
+    method: POST
+    body: "jg_id=23&njdm_id=2023&dlbs=&zyh_id=2310&currentPage_cx=&_search=false&nd=1&queryModel.showCount=15&queryModel.currentPage=1&queryModel.sortName=&queryModel.sortOrder=asc&time=1"
+    cookie: "{{JWGL_COOKIE}}"
+    headers:
+      Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+      X-Requested-With: XMLHttpRequest
+      Referer: https://jwgl.cug.edu.cn/jwglxt/jxzxjhgl/jxzxjhck_cxJxzxjhckIndex.html?gnmkdm=N153540
+    allowed_prefix: https://jwgl.cug.edu.cn
+    rate_limit:
+      interval: 6.0
+      jitter: 1.5
