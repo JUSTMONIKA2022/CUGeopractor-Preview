@@ -13,7 +13,7 @@
 设计边界：
     - 只读：不提交任何表单、不发起申请/审批（写操作红线不变）；
     - 会话：门户会话为长效 CAS（CASTGC），经 Playwright 持久会话自动获取（复用
-      `geopractor session-login` 的登录态），失败时提示重新登录；
+      `cugeopractor session-login` 的登录态），失败时提示重新登录；
     - 限速/熔断/TLS1.2：与其它连接器一致，低频防封禁。
 """
 
@@ -97,7 +97,7 @@ def _session_error(source: str) -> str:
     """门户会话不可用时的统一可读提示。"""
     return (
         tool_error(source, "未取得有效门户会话。\n")
-        + "  信息门户会话已失效。请运行 geopractor session-login 在浏览器中登录一次，"
+        + "  信息门户会话已失效。请运行 cugeopractor session-login 在浏览器中登录一次，"
         "之后 agent 将自动复用该登录态。"
     )
 
@@ -709,7 +709,7 @@ def to_tool_specs():
             name="portal_my_processes",
             description=(
                 "查询我发起的办事流程（信息门户：标题/发起时间/状态/处理人/来源模块），"
-                "需要已登录信息门户（geopractor session-login）"
+                "需要已登录信息门户（cugeopractor session-login）"
             ),
             fn=portal_my_processes,
             parameters={

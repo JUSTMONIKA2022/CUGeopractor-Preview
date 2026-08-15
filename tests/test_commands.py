@@ -306,7 +306,7 @@ def test_cli_paint_prefix_colors():
 
 def test_login_registered():
     """/login 与别名 /session-login 应已注册（chat 内可完成门户/教务登录）。"""
-    # 要求把 geopractor session-login 集成进 CLI chat：/login 为主名，
+    # 要求把 cugeopractor session-login 集成进 CLI chat：/login 为主名，
     # /session-login 为别名（与原顶层子命令同名，降低迁移成本）
     assert "login" in cmd_mod.COMMANDS
     assert "session-login" in cmd_mod.COMMANDS

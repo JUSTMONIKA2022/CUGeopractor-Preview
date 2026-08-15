@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""行至大地·Geopractor 应用包入口。
+"""行至大地·CUGeopractor 应用包入口。
 
 模块分层约定（低技术债务、模块化）：
     config   配置加载（.env / 环境变量 / 默认值）

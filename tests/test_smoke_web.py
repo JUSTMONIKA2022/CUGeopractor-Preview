@@ -130,7 +130,7 @@ def test_registry_has_session_connectors(tmp_path):
     assert count == 0  # 无配置文件 → 连接器默认关闭（安全设计）
 
 
-# ===== Agent API 可选鉴权（GEOPRACTOR_API_TOKEN）=====
+# ===== Agent API 可选鉴权（CUGEOPRACTOR_API_TOKEN）=====
 
 def test_api_token_default_pass(tmp_path):
     """未配置 token 时 API 无需鉴权（默认放行，保持开箱即用）。"""

@@ -215,7 +215,7 @@ def dispatch_cache(ctx: CmdContext, arg: str) -> bool:
 def _cmd_llm(ctx: CmdContext, arg: str) -> None:
     """切换/使用 LLM：/llm <问题>；携带当前缓存路径上下文。"""
     if not ctx.settings.is_configured:
-        ctx.out("[错误] 尚未配置模型服务，请先运行 geopractor configure")
+        ctx.out("[错误] 尚未配置模型服务，请先运行 cugeopractor configure")
         return
     question = arg.strip()
     if not question:
@@ -230,7 +230,7 @@ def _cmd_llm(ctx: CmdContext, arg: str) -> None:
     except Exception as exc:  # noqa: BLE001 网络/额度等异常给出可读提示
         ctx.out(f"[错误] LLM 调用失败：{type(exc).__name__}: {exc}")
         return
-    ctx.out(f"Geopractor > {reply}")
+    ctx.out(f"CUGeopractor > {reply}")
 
 
 # ===== /research 综合调研 =====
@@ -238,7 +238,7 @@ def _cmd_llm(ctx: CmdContext, arg: str) -> None:
 def _cmd_research(ctx: CmdContext, arg: str) -> None:
     """综合调研：agent 多来源自主搜集（官网/门户/贴吧/知乎/B站等交叉验证）。"""
     if not ctx.settings.is_configured:
-        ctx.out("[错误] 尚未配置模型服务，请先运行 geopractor configure")
+        ctx.out("[错误] 尚未配置模型服务，请先运行 cugeopractor configure")
         return
     topic = arg.strip()
     if not topic:
@@ -435,7 +435,7 @@ def _cmd_configure(ctx: CmdContext, arg: str) -> None:
 # ===== /login 会话登录（chat 内触发 session-login 流程） =====
 
 def _cmd_login(ctx: CmdContext, arg: str) -> None:
-    """在 chat 内完成门户/教务登录（等价于顶层 geopractor session-login）。
+    """在 chat 内完成门户/教务登录（等价于顶层 cugeopractor session-login）。
 
     用 Playwright 打开可见浏览器，引导用户登录统一认证门户并进入教务；
     登录态持久保存（data/browser_profile/jwgl），之后 /course、/live_* 教务类
@@ -446,7 +446,7 @@ def _cmd_login(ctx: CmdContext, arg: str) -> None:
     """
     from connectors.pw_session import login_jwgl
 
-    ctx.out("[信息] 将在浏览器中打开统一认证门户登录页（等价于 geopractor session-login）…")
+    ctx.out("[信息] 将在浏览器中打开统一认证门户登录页（等价于 cugeopractor session-login）…")
     ctx.out("[信息] 请在弹出的浏览器中完成登录（账号密码 + 滑块验证码）；登录完成后程序自动继续。")
     try:
         ok = login_jwgl()
@@ -1047,7 +1047,7 @@ _HELP_TOPICS: dict[str, str] = {
         "  GET  /api/cache/{channel}?refresh=  读取/强制刷新某渠道\n"
         "  POST /api/commands                 执行命令（{\"command\":\"/cache_search\"}）\n"
         "  POST /api/research                 综合调研（{\"message\":\"...\"}）\n"
-        "鉴权：配置 GEOPRACTOR_API_TOKEN 后需在请求头带 Bearer Token。"
+        "鉴权：配置 CUGEOPRACTOR_API_TOKEN 后需在请求头带 Bearer Token。"
     ),
 }
 
@@ -1065,7 +1065,7 @@ def _cmd_help(ctx: CmdContext, arg: str) -> None:
         return
     # 总览（一屏可读完 + 引导分级帮助）
     ctx.out(
-        "Geopractor CLI —— 行至大地·校园 Agent\n"
+        "CUGeopractor CLI —— 行至大地·校园 Agent\n"
         "用法：直接输入文字 = 自然语言问 LLM；/命令 = 不调 LLM 直查缓存/管理\n\n"
         "【命令速查】（/help <主题> 看详情与示例）\n"
         "  /cache_search             列出全部缓存渠道与状态\n"
@@ -1093,6 +1093,62 @@ def _cmd_help(ctx: CmdContext, arg: str) -> None:
     )
 
 
+# ===== 知识库命令（/index 重建索引、/knowledge 检索）=====
+
+def _cmd_index(ctx: CmdContext, arg: str = "") -> None:
+    """重建知识库索引：/index。
+
+    与顶层 `cugeopractor index` 等价：扫描知识库目录 → 分块 → 向量化 → 写库。
+    说明：向量化默认用本地内置 ONNX 模型；配置了 CUGEOPRACTOR_EMBEDDING_*
+    时改用外部 OpenAI 兼容接口（见 config.py 注释）。
+    """
+    from pathlib import Path
+
+    from app.rag.loader import load_documents_from_dir
+    from app.rag.store import VectorStore, build_embedding_function
+
+    # 目录不存在时自动创建，避免首次使用报错
+    Path(ctx.settings.knowledge_dir).mkdir(parents=True, exist_ok=True)
+    chunks = load_documents_from_dir(ctx.settings.knowledge_dir)
+    if not chunks:
+        ctx.out(
+            f"[信息] 知识库目录 {ctx.settings.knowledge_dir} 下未找到 txt/md/pdf 文档，"
+            "请先放入资料；示例见 docs/examples/knowledge/"
+        )
+        return
+    store = VectorStore(
+        data_dir=ctx.settings.data_dir,
+        embedding_function=build_embedding_function(ctx.settings),
+    )
+    store.clear()
+    count = store.add_chunks(chunks)
+    ctx.out(f"[信息] 索引完成：共导入 {count} 个知识块。")
+
+
+def _cmd_knowledge(ctx: CmdContext, arg: str = "") -> None:
+    """检索知识库：/knowledge <关键词>（显示命中块与来源）。"""
+    from app.rag.retriever import Retriever
+    from app.rag.store import VectorStore, build_embedding_function
+
+    query = arg.strip()
+    if not query:
+        ctx.out("[信息] 用法：/knowledge <关键词>（如 /knowledge 校历）")
+        return
+    store = VectorStore(
+        data_dir=ctx.settings.data_dir,
+        embedding_function=build_embedding_function(ctx.settings),
+    )
+    # top_k 在 Retriever 构造时指定（retrieve 方法签名仅接收 question）
+    hits = Retriever(store, top_k=3).retrieve(query)
+    if not hits:
+        ctx.out(f"[信息] 知识库中未找到与「{query}」相关的内容")
+        return
+    # 逐条输出：来源 + 文本摘要（检索到的知识库内容，附来源便于定位原文）
+    ctx.out(
+        "\n\n".join(f"[GEO] {h.source}\n{(h.text or '')[:300]}" for h in hits)
+    )
+
+
 # ===== 注册 =====
 register("cache_search", lambda ctx, arg: dispatch_cache(ctx, "search"))
 register("cache_refresh", lambda ctx, arg: dispatch_cache(ctx, "refresh " + arg.strip()))
@@ -1106,6 +1162,8 @@ register("schedule", _cmd_schedule)
 register("office_hours", _cmd_office_hours)
 register("configure", _cmd_configure)
 register("login", _cmd_login)
-# 别名：与原顶层子命令 geopractor session-login 同名，降低用户迁移成本
+# 别名：与原顶层子命令 cugeopractor session-login 同名，降低用户迁移成本
 register("session-login", _cmd_login)
+register("index", _cmd_index)
+register("knowledge", _cmd_knowledge)
 register("help", _cmd_help)

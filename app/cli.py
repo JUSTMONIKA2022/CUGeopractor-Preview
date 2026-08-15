@@ -31,7 +31,7 @@ except ImportError:  # 依赖未安装时给出友好提示
     typer = None  # type: ignore[assignment]
 
 # Typer 应用实例（typer 不可用时为 None，走手动分发）
-app = typer.Typer(help="行至大地·Geopractor —— 本地部署、用户自配密钥的开源校园 Agent") if typer is not None else None
+app = typer.Typer(help="行至大地·CUGeopractor —— 本地部署、用户自配密钥的开源校园 Agent") if typer is not None else None
 
 
 def _build_llm(settings: Settings) -> LLMClient:
@@ -115,7 +115,7 @@ def _warn_data_dir(settings: Settings) -> None:
     print(
         f"[提示] 数据目录指向项目外：{data}\n"
         "  若由系统环境变量 DATA_DIR/KNOWLEDGE_DIR 导致，可在 .env 设置带前缀的\n"
-        "  GEOPRACTOR_DATA_DIR=data（带前缀的变量优先，可避免被系统同名变量污染）。"
+        "  CUGEOPRACTOR_DATA_DIR=data（带前缀的变量优先，可避免被系统同名变量污染）。"
     )
 
 
@@ -168,7 +168,7 @@ def status() -> None:
         updated = f"｜更新 {_fmt_ts(entry['updated'])}"
         print(f"  {mark} {entry['name']}（{entry['command']}）{updated}")
     # 会话登录态提示（门户/教务工具依赖）
-    print("提示     : 门户/教务工具需先运行 geopractor session-login 登录一次")
+    print("提示     : 门户/教务工具需先运行 cugeopractor session-login 登录一次")
 
 
 def index() -> None:
@@ -346,8 +346,8 @@ def _first_run_guide() -> None:
     print("  ④ /research <主题>    → 综合调研（会调用 LLM）")
     print("-" * 56)
     print("  门户/教务等个人数据功能需先登录（只登录一次，之后自动复用）：")
-    print("    在 chat 内输入 /login（或退出后在终端执行 geopractor session-login）→ 浏览器登录地大认证门户")
-    print("  配置模型：/configure（当前会话）或 chat 外 geopractor configure")
+    print("    在 chat 内输入 /login（或退出后在终端执行 cugeopractor session-login）→ 浏览器登录地大认证门户")
+    print("  配置模型：/configure（当前会话）或 chat 外 cugeopractor configure")
     print("=" * 56)
     try:
         input("（按回车键开始使用…）")
@@ -376,9 +376,9 @@ def chat() -> None:
         print("=" * 56)
         print("  [配置] 尚未配置模型服务，按下面 3 步即可开始：")
         print("  " + "-" * 52)
-        print("  ① geopractor configure   交互式填写 Base URL / 模型 / 密钥")
-        print("  ② geopractor status      确认「密钥：已配置」")
-        print("  ③ geopractor chat        重新进入对话")
+        print("  ① cugeopractor configure   交互式填写 Base URL / 模型 / 密钥")
+        print("  ② cugeopractor status      确认「密钥：已配置」")
+        print("  ③ cugeopractor chat        重新进入对话")
         print("  " + "-" * 52)
         print("  说明：密钥加密存本机；也可编辑 .env（参考 .env.example）")
         print("=" * 56)
@@ -426,7 +426,7 @@ def chat() -> None:
     # 欢迎语：能力概览 + 示例问题（参照同行产品"上手即用"与 Aha Moment 引导）
     # 注意：不使用 emoji（Windows GBK 控制台无法输出，会 UnicodeEncodeError）
     print("=" * 56)
-    print("  == 行至大地·Geopractor 已就绪 ==")
+    print("  == 行至大地·CUGeopractor 已就绪 ==")
     print(f"  模型：{settings.llm_model}")
     print("-" * 56)
     print("  试试问：本周学校有什么通知？/ 地大宿舍条件怎么样？")
@@ -512,7 +512,7 @@ def chat() -> None:
                 reply = agent.chat(line)
             except LLMError as exc:
                 reply = f"[错误] {exc}"
-            print("Geopractor > " + _paint(reply))
+            print("CUGeopractor > " + _paint(reply))
             _history.append({"input": line, "outputs": [reply]})
             _view_idx = len(_history)
     except (KeyboardInterrupt, EOFError):
@@ -570,7 +570,7 @@ def _manual_dispatch() -> None:
     if handler:
         handler()
     else:
-        print("用法：geopractor <configure|chat|index|status|serve|session-login>")
+        print("用法：cugeopractor <configure|chat|index|status|serve|session-login>")
 
 
 if __name__ == "__main__":

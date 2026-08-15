@@ -1,6 +1,6 @@
 # 小红书数据服务：用户侧部署指南（BYO 模式）
 
-> 本项目（行至大地·Geopractor）**不包含**任何第三方爬虫代码、签名生成或逆向实现。
+> 本项目（行至大地·CUGeopractor）**不包含**任何第三方爬虫代码、签名生成或逆向实现。
 > 小红书强反爬（x-s/x-t 签名 + 登录态 + 账号级风控），本项目通过"用户自配"方式接入：
 > **由用户自行部署一个小红书数据服务**（任选其一，如开源的 [ReaJason/xhs](https://github.com/ReaJason/xhs)
 > 或 [Xiaohongshutools](https://hub.openclaw.ai/chocomintx/skills/xiaohongshutools)），
@@ -10,7 +10,7 @@
 
 ```
 ┌─────────────────────────┐        HTTP        ┌──────────────────────────────┐
-│ Geopractor (本机 Agent)  │ ──── /search ────▶ │ 用户自部署的小红书数据服务      │
+│ CUGeopractor (本机 Agent)  │ ──── /search ────▶ │ 用户自部署的小红书数据服务      │
 │ xhs_search 工具          │ ◀──── 约定 JSON ─── │  方案一：xhs 库 + Docker 签名 │
 └─────────────────────────┘                    │  方案二：Xiaohongshutools      │
                                                └──────────────────────────────┘
@@ -63,7 +63,7 @@ def sign(uri, data=None, a1="", web_session=""):
 
 @app.route("/search")
 def search():
-    """供 Geopractor 调用的数据接口（约定格式）"""
+    """供 CUGeopractor 调用的数据接口（约定格式）"""
     keyword = request.args.get("keyword", "")
     count = int(request.args.get("count", 8))
     client = XhsClient(cookie=COOKIE, sign=sign)
@@ -124,7 +124,7 @@ async def _search(keyword, count):
 
 @app.route("/search")
 def search():
-    """供 Geopractor 调用的数据接口（约定格式）"""
+    """供 CUGeopractor 调用的数据接口（约定格式）"""
     keyword = request.args.get("keyword", "")
     count = int(request.args.get("count", 8))
     data = asyncio.run(_search(keyword, count))
@@ -148,10 +148,10 @@ pip install flask aiohttp loguru pycryptodome getuseragent
 python user_xhs_redfox_service.py   # 监听 127.0.0.1:5100
 ```
 
-> 两种方案对 Geopractor 完全等价（同一 `/search` 约定协议），按需选择即可；
+> 两种方案对 CUGeopractor 完全等价（同一 `/search` 约定协议），按需选择即可；
 > 方案一依赖 Playwright 签名服务（较重），方案二为纯 Python（较轻但属逆向实现）。
 
-### 5. 配置 Geopractor
+### 5. 配置 CUGeopractor
 
 在 `.env`（仅本机，不入库）中设置：
 

@@ -1,18 +1,18 @@
-# Geopractor API 联动协议（程序间接入接口）
+# CUGeopractor API 联动协议（程序间接入接口）
 
 > 版本：v1.1
-> 用途：允许其他程序/软件通过规定的 JSON API 协议调用 Geopractor 的能力
+> 用途：允许其他程序/软件通过规定的 JSON API 协议调用 CUGeopractor 的能力
 > （健康检查、Agent 对话、工具清单、缓存查询、命令执行、综合调研），实现程序间联动。
-> 服务地址：`geopractor serve` 启动后默认 `http://127.0.0.1:8080`。
+> 服务地址：`cugeopractor serve` 启动后默认 `http://127.0.0.1:8080`。
 
 ## 0. 通用约定
 
 - 除健康检查外，所有接口均为 JSON；字符编码 UTF-8；
-- **鉴权**：本机默认不鉴权（开箱即用）；若配置了 `GEOPRACTOR_API_TOKEN`，
+- **鉴权**：本机默认不鉴权（开箱即用）；若配置了 `CUGEOPRACTOR_API_TOKEN`，
   请求必须带 `Authorization: Bearer <token>`，否则返回 401；
 - 统一响应：成功 `{"ok": true, ...}`；失败 `{"ok": false, "error": "原因"}`；
 - **模型依赖**：`/api/commands`、`/api/chat`、`/api/agent/invoke`、`/api/research`
-  需要已配置模型服务（`geopractor configure`），未配置返回 400 可读提示；
+  需要已配置模型服务（`cugeopractor configure`），未配置返回 400 可读提示；
   `/api/health`、`/api/agent/tools`、`/api/cache*` 不依赖模型。
 
 ## 1. 接口总览
@@ -190,7 +190,7 @@ Content-Type: application/json
   `/login`（/session-login，会话内浏览器登录）、`/help [主题]`。
 
 > 注意：涉及教务/门户的命令（`/live_*`、`/course` 等）需要登录态
-> （`geopractor session-login` 或 `/login` 登录过一次）；未登录返回可读提示。
+> （`cugeopractor session-login` 或 `/login` 登录过一次）；未登录返回可读提示。
 >
 > 模型门槛（放宽，与 CLI 对齐）：未配置模型服务时，`/llm`、`/research`
 > 返回 400；其余纯命令（缓存/实时/课表/办公时间/编排等）可直接执行，无需模型。
@@ -238,6 +238,6 @@ curl -X POST http://127.0.0.1:8080/api/agent/invoke \
 # 综合调研
 curl -X POST http://127.0.0.1:8080/api/research \
   -H "Content-Type: application/json" -d '{"message": "地大宿舍条件"}'
-# 带鉴权（配置了 GEOPRACTOR_API_TOKEN 时所有接口均需）
+# 带鉴权（配置了 CUGEOPRACTOR_API_TOKEN 时所有接口均需）
 curl -H "Authorization: Bearer <token>" http://127.0.0.1:8080/api/cache
 ```

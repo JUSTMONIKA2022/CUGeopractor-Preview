@@ -1,5 +1,5 @@
 # =========================================================
-# 行至大地·Geopractor —— 项目构建配置
+# 行至大地·CUGeopractor —— 项目构建配置
 # 说明：本项目为"用户自配密钥 + 本地部署"的开源校园 Agent（MVP）
 # 技术栈：Python 3.11+ / OpenAI 兼容协议 / RAG / FastAPI / Typer
 # 模块化原则：app 包内按 配置/密钥/LLM/RAG/Agent/Web/CLI 分层，
@@ -10,13 +10,13 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "geopractor"
+name = "cugeopractor"
 version = "0.1.0"
-description = "行至大地·Geopractor —— 本地部署、用户自配密钥的开源校园 Agent（MVP）"
+description = "行至大地·CUGeopractor —— 本地部署、用户自配密钥的开源校园 Agent（MVP）"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
-authors = [{ name = "Geopractor Contributors" }]
+authors = [{ name = "CUGeopractor Contributors" }]
 keywords = ["agent", "llm", "rag", "campus", "local-first"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -55,8 +55,8 @@ render = [
 ]
 
 [project.scripts]
-# 统一 CLI 入口：安装后可直接执行 `geopractor --help`
-geopractor = "app.cli:main"
+# 统一 CLI 入口：安装后可直接执行 `cugeopractor --help`
+cugeopractor = "app.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["app*", "connectors*"]

@@ -436,7 +436,7 @@ class SessionConnector:
             if self.pw_profile:
                 return (
                     tool_error(self.name, "未取得有效教务会话。\n")
-                    + "  教务系统会话已失效（正方会话短效）。请运行 geopractor session-login "
+                    + "  教务系统会话已失效（正方会话短效）。请运行 cugeopractor session-login "
                     "在浏览器中重新登录一次，之后 agent 将自动复用该登录态。"
                 )
             return tool_error(self.name, "未配置会话（请登录教务系统并设置 SESSION_COOKIE/JWGL_COOKIE 环境变量）")
@@ -495,7 +495,7 @@ class SessionConnector:
                 pw_session._cookie_cache.clear()  # noqa: SLF001 强制下次重新取会话
                 return (
                     tool_error(self.name, "教务会话已过期（HTTP 901）。\n")
-                    + "  正方系统会话短效，请运行 geopractor session-login 重新登录一次，"
+                    + "  正方系统会话短效，请运行 cugeopractor session-login 重新登录一次，"
                     "之后 agent 将自动复用并保活该登录态。"
                 )
             return (

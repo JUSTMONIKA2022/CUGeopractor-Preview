@@ -92,7 +92,7 @@ def _build_llm(settings: Settings) -> LLMClient:
 
 
 def _check_api_token(request: Request, settings: Settings) -> JSONResponse | None:
-    """Agent API 可选鉴权校验：配置了 GEOPRACTOR_API_TOKEN 时要求 Bearer Token。
+    """Agent API 可选鉴权校验：配置了 CUGEOPRACTOR_API_TOKEN 时要求 Bearer Token。
 
     返回 None=通过；返回 JSONResponse=拒绝（401）。未配置 token 时一律放行
     （保持本机默认部署的开箱即用体验）。
@@ -104,7 +104,7 @@ def _check_api_token(request: Request, settings: Settings) -> JSONResponse | Non
     if auth == f"Bearer {token}":
         return None
     return JSONResponse(
-        {"ok": False, "error": "未授权：需要有效的 Bearer Token（GEOPRACTOR_API_TOKEN）"},
+        {"ok": False, "error": "未授权：需要有效的 Bearer Token（CUGEOPRACTOR_API_TOKEN）"},
         status_code=401,
     )
 
@@ -112,7 +112,7 @@ def _check_api_token(request: Request, settings: Settings) -> JSONResponse | Non
 def create_app(settings: Settings | None = None) -> FastAPI:
     """创建 FastAPI 应用（工厂函数，便于测试注入 mock 配置）。"""
     settings = settings or get_settings()
-    app = FastAPI(title="行至大地·Geopractor", version="0.1.0")
+    app = FastAPI(title="行至大地·CUGeopractor", version="0.1.0")
 
     # 依赖初始化（进程级单例：向量库/检索器/工具注册表）
     store = VectorStore(data_dir=settings.data_dir)

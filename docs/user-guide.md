@@ -1,4 +1,4 @@
-# 行至大地·Geopractor 使用指南（User Guide）
+# 行至大地·CUGeopractor 使用指南（User Guide）
 
 > 版本：v1.0
 > 配套：`docs/api-protocol.md`（程序联动协议）
@@ -8,7 +8,7 @@
 
 ## 1. 这是什么
 
-「行至大地·Geopractor」是一个**本地部署、密钥自配**的校园信息 Agent：
+「行至大地·CUGeopractor」是一个**本地部署、密钥自配**的校园信息 Agent：
 
 - **自己掌控**：模型 API、校园账号、Cookie 全部存在你本机，不上传任何第三方；数据不出本机。
 - **两种用法**（这是本产品区别于普通聊天机器人的核心）：
@@ -29,7 +29,7 @@ pip install -e ".[render]"  # 可选：贴吧/教务等需要 Playwright 真实�
 ### 2.2 首次配置模型（必做）
 
 ```powershell
-geopractor configure
+cugeopractor configure
 ```
 
 按提示填写（密钥会加密存本机，不落明文）：
@@ -43,13 +43,13 @@ geopractor configure
 验证配置：
 
 ```powershell
-geopractor status
+cugeopractor status
 ```
 
 ### 2.3 准备校园登录态（可选，门户/教务工具需要）
 
 ```powershell
-geopractor session-login     # 弹出浏览器，登录一次地大统一认证门户
+cugeopractor session-login     # 弹出浏览器，登录一次地大统一认证门户
 ```
 
 之后 Agent 自动复用登录态访问门户只读服务与教务（课表/成绩/考试/学籍/培养方案）。
@@ -59,8 +59,8 @@ geopractor session-login     # 弹出浏览器，登录一次地大统一认证�
 两种形态任选：
 
 ```powershell
-geopractor chat      # 终端交互式对话（推荐，命令系统最完整）
-geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
+cugeopractor chat      # 终端交互式对话（推荐，命令系统最完整）
+cugeopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 ```
 
 ---
@@ -69,8 +69,8 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 
 | 形态 | 入口 | 适合场景 | 说明 |
 |---|---|---|---|
-| CLI | `geopractor chat` | 终端重度用户 | 命令系统最完整：缓存直查/定时任务/综合调研 |
-| Web | `geopractor serve` | 轻量问答 | 对话窗 + 命令速查；`/` 开头同样走命令系统 |
+| CLI | `cugeopractor chat` | 终端重度用户 | 命令系统最完整：缓存直查/定时任务/综合调研 |
+| Web | `cugeopractor serve` | 轻量问答 | 对话窗 + 命令速查；`/` 开头同样走命令系统 |
 | API | HTTP 接口 | 与其他程序/软件联动 | 见 `docs/api-protocol.md` |
 
 三种形态共用同一套核心（配置/密钥/工具/缓存），行为一致。
@@ -79,20 +79,20 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 
 ## 4. CLI 详解
 
-### 4.1 顶层命令（`geopractor <命令>`）
+### 4.1 顶层命令（`cugeopractor <命令>`）
 
 | 命令 | 作用 | 示例 |
 |---|---|---|
-| `configure` | 交互式配置 LLM（Base URL/模型/密钥） | `geopractor configure` |
-| `chat` | 进入交互式对话（命令系统 + 自然语言） | `geopractor chat` |
-| `index` | 重建知识库索引（扫描 `data/knowledge/` 文档） | `geopractor index` |
-| `status` | 查看配置与知识库状态 | `geopractor status` |
-| `serve` | 启动本地 Web UI（默认 127.0.0.1:8080） | `geopractor serve` |
-| `session-login` | 浏览器登录地大认证门户，登录态持久保存 | `geopractor session-login` |
+| `configure` | 交互式配置 LLM（Base URL/模型/密钥） | `cugeopractor configure` |
+| `chat` | 进入交互式对话（命令系统 + 自然语言） | `cugeopractor chat` |
+| `index` | 重建知识库索引（扫描 `data/knowledge/` 文档） | `cugeopractor index` |
+| `status` | 查看配置与知识库状态 | `cugeopractor status` |
+| `serve` | 启动本地 Web UI（默认 127.0.0.1:8080） | `cugeopractor serve` |
+| `session-login` | 浏览器登录地大认证门户，登录态持久保存 | `cugeopractor session-login` |
 
 ### 4.2 chat 内命令全表（以 `/` 开头）
 
-进入 `geopractor chat` 后：
+进入 `cugeopractor chat` 后：
 
 **缓存命令（不调 LLM，秒级返回）**
 
@@ -147,7 +147,7 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 | `/schedule` | **课表预设方案配置**：内置两套校级标准时间表——**南望山校区**（夏/冬按日期自动切换：夏季 5/1–9/30、冬季 10/1–次年4/30，各 10 节课含 30 分钟大课间/午休差异）与**未来城校区**（无季节区分，12 节课）。查看 `/schedule`；切换 `/schedule campus 南望山\|未来城`；修改单节时间 `/schedule set period <节次> <HH:MM-HH:MM> [夏\|冬]`；恢复默认 `/schedule reset [夏\|冬]`；第一周周一 `/schedule set first_week_monday YYYY-MM-DD`（编排必需）。是 `/next_course` 的编排依据 |
 | `/office_hours` | **当前是否办公时间**：依据当前校区方案的办公时间表判断（如南望山夏 上午08:00–12:00/下午14:30–17:30），显示当前时间与时段 |
 | `/configure` | **管理 LLM 多方案**：`/configure` 查看｜`/configure add <名字>` 新增｜`/configure use <名字>` 切换（立即生效）｜`/configure remove <名字>` 删除｜`/configure show [名字]` 查看详情。多套 Base URL/模型/密钥分别存储，密钥按方案加密、不落明文 |
-| `/login`（别名 `/session-login`） | **在 chat 内完成门户/教务登录**（等价 `geopractor session-login`）：弹出浏览器登录一次，登录态持久保存，之后自动复用 |
+| `/login`（别名 `/session-login`） | **在 chat 内完成门户/教务登录**（等价 `cugeopractor session-login`）：弹出浏览器登录一次，登录态持久保存，之后自动复用 |
 | `/help [主题]` | 帮助总览 / 分级帮助（`/help cache`、`/help llm`、`/help research`、`/help cron`、`/help course`、`/help api`） |
 | `/clear` | 隐藏当前屏幕 + 清空 LLM 会话上下文（**交互历史保留**，`/back` 仍可回看） |
 | `/exit` 或 `/quit` | 退出 |
@@ -225,11 +225,11 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 
 ## 5. Web UI 使用
 
-启动 `geopractor serve` 后浏览器打开 `http://127.0.0.1:8080`：
+启动 `cugeopractor serve` 后浏览器打开 `http://127.0.0.1:8080`：
 
 1. **对话**：输入框直接提问；**以 `/` 开头同样走命令系统**（如 `/cache_search`），与 CLI 行为一致；
 2. **命令速查**：页面下方「命令速查」按钮，随时查看命令列表；
-3. **设置**：右上角「设置」弹窗填写 Base URL/模型/密钥（与 `geopractor configure` 等价）；
+3. **设置**：右上角「设置」弹窗填写 Base URL/模型/密钥（与 `cugeopractor configure` 等价）；
 4. **重建知识库索引**：放入新文档到 `data/knowledge/` 后点击，把文档向量化导入知识库。
 
 ### 5.1 知识库（RAG）使用
@@ -237,10 +237,10 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 知识库是**本地检索增强**数据源：把长期稳定的资料（校历、办事指南、培养方案等）放入 `data/knowledge/`（支持 txt / md / pdf），索引后对话时 LLM 自动检索相关内容并附来源引用。
 
 1. **放文档**：复制示例 `docs/examples/knowledge/示例知识库.md` 到 `data/knowledge/`（或放入自己的资料）；
-2. **建索引**：CLI 执行 `geopractor index`，或点击 Web 的「重建知识库索引」；索引为 0 块说明目录为空或尚未索引；
-3. **看状态**：`geopractor status` 显示知识库块数；对话中问到资料内内容即自动命中。
+2. **建索引**：CLI 执行 `cugeopractor index`，或点击 Web 的「重建知识库索引」；索引为 0 块说明目录为空或尚未索引；
+3. **看状态**：`cugeopractor status` 显示知识库块数；对话中问到资料内内容即自动命中。
 
-**向量化模式**（`geopractor index` 会打印当前模式）：
+**向量化模式**（`cugeopractor index` 会打印当前模式）：
 
 - **默认**：ChromaDB 内置本地 ONNX 小模型——免密钥、数据不出本机，首次索引自动下载模型权重，开箱即用；
 - **可选**：在 `.env` 配置 `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY` / `EMBEDDING_MODEL`，切换为 OpenAI 兼容 `/embeddings` 外部接口（更强模型或远程向量化）。
@@ -273,7 +273,7 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 
 ## 7. 与其他程序联动（API）
 
-适合：让别的软件/脚本调用 Geopractor 的能力（详见 `docs/api-protocol.md`）：
+适合：让别的软件/脚本调用 CUGeopractor 的能力（详见 `docs/api-protocol.md`）：
 
 | 接口 | 方法 | 作用 |
 |---|---|---|
@@ -284,7 +284,7 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 | `/api/agent/invoke` | POST | 自然语言对话（按 session_id 隔离会话） |
 | `/api/health` | GET | 健康/配置检查 |
 
-配置 `GEOPRACTOR_API_TOKEN` 后，请求头需带 `Authorization: Bearer <token>`。
+配置 `CUGEOPRACTOR_API_TOKEN` 后，请求头需带 `Authorization: Bearer <token>`。
 
 ---
 
@@ -293,11 +293,11 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 **Q0：CLI 输出里的彩色前缀（[INFO]/[ERROR]/[WARN]/[GEO]）是什么意思？**
 每次输入后 CLI 会清空旧输出、只保留本次结果（保持面板干净）；前缀颜色区分信息类型：**蓝色 `[INFO]`**=程序提示、**红色 `[ERROR]`**=错误、**黄色 `[WARN]`**=警告、**绿色 `[GEO]`**=CLI 返回的结果内容。颜色仅影响终端显示，Web/API 返回的仍是原始文本。
 
-**Q1：`geopractor chat` 提示未配置模型？**
-运行 `geopractor configure` 填写 Base URL/模型/密钥，再用 `geopractor status` 确认。
+**Q1：`cugeopractor chat` 提示未配置模型？**
+运行 `cugeopractor configure` 填写 Base URL/模型/密钥，再用 `cugeopractor status` 确认。
 
 **Q2：门户/教务工具提示"会话失效"？**
-运行 `geopractor session-login`（或在 chat 内直接输入 `/login`）在浏览器重新登录一次。教务会话短效（约 20~60 分钟），门户为长效会话；Agent 会自动复用与保活，失效时按提示重新登录即可。
+运行 `cugeopractor session-login`（或在 chat 内直接输入 `/login`）在浏览器重新登录一次。教务会话短效（约 20~60 分钟），门户为长效会话；Agent 会自动复用与保活，失效时按提示重新登录即可。
 
 **Q3：`/cache_*` 返回"生成缓存失败"或渠道为空？**
 多为渠道临时不可用（如贴吧风控、未登录）。用 `/cache_refresh <渠道>` 重试；贴吧可配置本机 Tieba-API-SCF 服务（见 `docs/tieba-service-guide.md`）提高成功率。
@@ -318,7 +318,7 @@ CLI 会给出相近命令建议（如输入 `/cache_ifweb` 提示你是不是想
 知乎走**官方 OpenAPI**（`developer.zhihu.com` 开放平台），无需模拟登录/抓页面；两个工具：`zhihu_search`（站内搜索）与 `zhihu_global_search`（全网搜索）。
 
 **Q9：怎么用"下一节课"和课表对比？**
-- 先 `geopractor session-login` 登录教务 → `/course` 查询一次课表（自动缓存结构化快照）；
+- 先 `cugeopractor session-login` 登录教务 → `/course` 查询一次课表（自动缓存结构化快照）；
 - `/schedule set first_week_monday YYYY-MM-DD` 配置第一周周一等编排参数；
 - 之后随时 `/next_course` 查看下一节课与倒计时；
 - 每次 `/course`/`/live_course` 或问 LLM"查课表"都会自动与上次缓存课表对比，换课/调课会明确提示差异（新增/取消/地点变动），避免按旧课表上课。

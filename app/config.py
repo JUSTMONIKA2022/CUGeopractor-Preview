@@ -54,19 +54,19 @@ class Settings(BaseSettings):
     port: int = 8080            # Web UI 端口
     # Agent API 可选鉴权 Token（默认空=不校验；设置后 /api/chat 与 /api/agent/invoke
     # 需携带 Authorization: Bearer <token>。建议仅在需要对外暴露 8080 时配置）
-    api_token: str = Field(default="", validation_alias="GEOPRACTOR_API_TOKEN")
+    api_token: str = Field(default="", validation_alias="CUGEOPRACTOR_API_TOKEN")
 
     # ===== 数据目录 =====
-    # 说明：只认带 GEOPRACTOR_ 前缀的环境变量，彻底避免被系统里常见的同名变量
+    # 说明：只认带 CUGEOPRACTOR_ 前缀的环境变量，彻底避免被系统里常见的同名变量
     # （如 DATA_DIR 可能被其他软件占用，pydantic-settings 中系统环境变量优先级
     # 高于 .env）污染；默认值即项目内 data/，与旧 .env 无前缀写法等效。
     knowledge_dir: str = Field(
         default="data/knowledge",  # 用户自备知识库文档目录
-        validation_alias="GEOPRACTOR_KNOWLEDGE_DIR",
+        validation_alias="CUGEOPRACTOR_KNOWLEDGE_DIR",
     )
     data_dir: str = Field(
         default="data",  # 向量库/会话/密钥存储目录（本地，不入库）
-        validation_alias="GEOPRACTOR_DATA_DIR",
+        validation_alias="CUGEOPRACTOR_DATA_DIR",
     )
 
     @property

@@ -164,7 +164,7 @@ def start() -> None:
         if _thread is not None and _thread.is_alive():
             return
         _stop_flag.clear()
-        _thread = threading.Thread(target=_worker, name="geopractor-cron", daemon=True)
+        _thread = threading.Thread(target=_worker, name="cugeopractor-cron", daemon=True)
         _thread.start()
 
 

@@ -1,11 +1,11 @@
-# 行至大地·Geopractor —— Docker Compose 编排
+# 行至大地·CUGeopractor —— Docker Compose 编排
 # 安全要点：端口仅绑定 127.0.0.1（本机回环），禁止随意改为 0.0.0.0 对外暴露；
 #          数据目录（配置/密钥/知识库）通过卷挂载到宿主机 ./data，持久化且不入镜像。
 
 services:
-  geopractor:
+  cugeopractor:
     build: .
-    container_name: geopractor
+    container_name: cugeopractor
     restart: unless-stopped
     ports:
       # 仅本机可访问；如需局域网使用请自行评估风险并修改

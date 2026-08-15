@@ -1,6 +1,6 @@
 # 贴吧数据服务：用户侧部署指南（BYO 模式）
 
-> 本项目（行至大地·Geopractor）**不包含**任何第三方爬虫代码、签名生成或逆向实现。
+> 本项目（行至大地·CUGeopractor）**不包含**任何第三方爬虫代码、签名生成或逆向实现。
 > 贴吧网页版为 CSR 单页应用 + 动态风控（「百度安全验证」JS 挑战），纯 HTTP / Playwright
 > 渲染均可能被拦。本项目通过"用户自配"方式接入：
 > **由用户自行部署一个贴吧数据服务**（推荐开源项目 [Dilettante258/Tieba-API-SCF](https://github.com/Dilettante258/Tieba-API-SCF)，
@@ -12,7 +12,7 @@
 
 ```
 ┌─────────────────────────┐        HTTP        ┌──────────────────────────────┐
-│ Geopractor (本机 Agent)  │ ── /forum/thread ─▶│ 用户自部署的贴吧数据服务       │
+│ CUGeopractor (本机 Agent)  │ ── /forum/thread ─▶│ 用户自部署的贴吧数据服务       │
 │ tieba_search 工具        │ ── /forum/search ─▶│  Tieba-API-SCF（内置 BDUSS）  │
 │                         │ ◀──── 约定 JSON ────│                              │
 │                         │ ◀── SSE 流式结果 ───│                              │
@@ -94,7 +94,7 @@ BDUSS=你的BDUSS node ./api-node/index.js
 仓库 `wrangler.jsonc` 已含 Worker 部署配置，按仓库说明设置 `BDUSS` 环境变量后
 `wrangler deploy` 即可；无服务器、免运维，但受 Worker 请求配额限制。
 
-## 三、配置 Geopractor
+## 三、配置 CUGeopractor
 
 在 `.env`（仅本机，不入库）中设置：
 
