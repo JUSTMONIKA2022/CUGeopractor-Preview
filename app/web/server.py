@@ -320,8 +320,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/knowledge/index")
     def index_knowledge() -> JSONResponse:
-        """重建知识库索引：扫描 KNOWLEDGE_DIR，清空向量库后重新导入。"""
+        """重建知识库索引：扫描 KNOWLEDGE_DIR，清空向量库后重新导入。
+
+        说明：知识库目录不存在时自动创建；无文档返回可读提示（indexed=0）。
+        """
+        Path(settings.knowledge_dir).mkdir(parents=True, exist_ok=True)
         chunks = load_documents_from_dir(settings.knowledge_dir)
+        if not chunks:
+            return JSONResponse(
+                {
+                    "ok": True,
+                    "indexed": 0,
+                    "message": f"知识库目录 {settings.knowledge_dir} 下未找到文档，"
+                    "请放入 txt/md/pdf 后重试；示例见 docs/examples/knowledge/。",
+                }
+            )
+        from app.rag.store import build_embedding_function
+
+        store = VectorStore(
+            data_dir=settings.data_dir,
+            embedding_function=build_embedding_function(settings),
+        )
         store.clear()
         count = store.add_chunks(chunks)
         return JSONResponse({"ok": True, "indexed": count})

@@ -79,6 +79,27 @@ geopractor serve
 供其他程序接入（健康检查、Agent 对话、工具清单、缓存查询、命令执行、综合调研）：
 协议见 [docs/api-protocol.md](docs/api-protocol.md)。
 
+## 知识库（RAG）
+
+项目内置本地检索增强数据源：把长期稳定的资料（校历、办事指南、培养方案等）放入
+`data/knowledge/`（支持 txt / md / pdf），索引后对话时 LLM 自动检索相关内容并附来源引用。
+
+```bash
+# 1. 复制示例文档（或放入自己的资料）
+mkdir -p data/knowledge
+cp docs/examples/knowledge/*.md data/knowledge/
+
+# 2. 重建索引（新增/修改/删除文档后都需要）
+geopractor index
+
+# 3. 查看块数
+geopractor status
+```
+
+**向量化**：默认使用 ChromaDB 内置本地 ONNX 小模型（免密钥、数据不出本机，首次自动下载权重）；
+如需外部接口，在 `.env` 配置 `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY` / `EMBEDDING_MODEL`
+切换为 OpenAI 兼容 `/embeddings` 接口。
+
 ## 架构
 
 ```

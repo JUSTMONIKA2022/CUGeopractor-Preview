@@ -48,3 +48,29 @@ def test_retriever_with_hits():
     context = retriever.build_context("第一周是什么时候")
     assert "guide.md" in context
     assert "校历第一周" in context
+
+
+def test_build_embedding_function_default():
+    """未配置外部 embedding 时应返回 ChromaDB 内置默认函数（零密钥本地模型）。"""
+    from types import SimpleNamespace
+
+    from app.rag.store import build_embedding_function
+
+    settings = SimpleNamespace(embedding_base_url="", embedding_api_key="", embedding_model="")
+    ef = build_embedding_function(settings)
+    assert "DefaultEmbeddingFunction" in type(ef).__name__, "默认应使用本地内置 ONNX 模型"
+
+
+def test_build_embedding_function_external():
+    """配置 EMBEDDING_BASE_URL 时应返回 OpenAI 兼容外部函数。"""
+    from types import SimpleNamespace
+
+    from app.rag.store import build_embedding_function
+
+    settings = SimpleNamespace(
+        embedding_base_url="https://api.example.com/v1",
+        embedding_api_key="demo-key",
+        embedding_model="text-embedding-3-small",
+    )
+    ef = build_embedding_function(settings)
+    assert "OpenAIEmbeddingFunction" in type(ef).__name__, "配置后应切换到外部 embedding 接口"

@@ -232,6 +232,19 @@ geopractor serve     # Web 界面（默认 http://127.0.0.1:8080）
 3. **设置**：右上角「设置」弹窗填写 Base URL/模型/密钥（与 `geopractor configure` 等价）；
 4. **重建知识库索引**：放入新文档到 `data/knowledge/` 后点击，把文档向量化导入知识库。
 
+### 5.1 知识库（RAG）使用
+
+知识库是**本地检索增强**数据源：把长期稳定的资料（校历、办事指南、培养方案等）放入 `data/knowledge/`（支持 txt / md / pdf），索引后对话时 LLM 自动检索相关内容并附来源引用。
+
+1. **放文档**：复制示例 `docs/examples/knowledge/示例知识库.md` 到 `data/knowledge/`（或放入自己的资料）；
+2. **建索引**：CLI 执行 `geopractor index`，或点击 Web 的「重建知识库索引」；索引为 0 块说明目录为空或尚未索引；
+3. **看状态**：`geopractor status` 显示知识库块数；对话中问到资料内内容即自动命中。
+
+**向量化模式**（`geopractor index` 会打印当前模式）：
+
+- **默认**：ChromaDB 内置本地 ONNX 小模型——免密钥、数据不出本机，首次索引自动下载模型权重，开箱即用；
+- **可选**：在 `.env` 配置 `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY` / `EMBEDDING_MODEL`，切换为 OpenAI 兼容 `/embeddings` 外部接口（更强模型或远程向量化）。
+
 ---
 
 ## 6. Agent 内置工具清单（自然语言自动调用）

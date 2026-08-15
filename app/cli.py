@@ -13,6 +13,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from app.agent.core import Agent
 from app.agent.memory import SessionMemory
 from app.agent.tools import create_default_registry
@@ -172,11 +174,29 @@ def status() -> None:
 def index() -> None:
     """重建知识库索引：扫描 KNOWLEDGE_DIR 并导入向量库。"""
     settings = get_settings()
+    from app.rag.loader import load_documents_from_dir
+    from app.rag.store import VectorStore, build_embedding_function
+
+    # 知识库目录不存在时自动创建（避免首次使用报"目录不存在"）
+    Path(settings.knowledge_dir).mkdir(parents=True, exist_ok=True)
     chunks = load_documents_from_dir(settings.knowledge_dir)
     if not chunks:
-        print(f"知识库目录 {settings.knowledge_dir} 下未找到 txt/md/pdf 文档，请先放入资料。")
+        print(
+            f"知识库目录 {settings.knowledge_dir} 下未找到 txt/md/pdf 文档。\n"
+            "请放入资料后重试；或复制示例："
+            "docs/examples/knowledge/ 中的文件到该目录。"
+        )
         return
-    store = VectorStore(data_dir=settings.data_dir)
+    # 向量化模式说明：默认本地内置 ONNX 模型（免密钥）；配置 EMBEDDING_BASE_URL 时用外部接口
+    if settings.embedding_base_url.strip():
+        mode = f"外部接口 {settings.embedding_base_url}（模型 {settings.embedding_model or '默认'}）"
+    else:
+        mode = "本地内置 ONNX 模型（免密钥，首次使用自动下载权重）"
+    print(f"向量化模式：{mode}")
+    store = VectorStore(
+        data_dir=settings.data_dir,
+        embedding_function=build_embedding_function(settings),
+    )
     store.clear()
     count = store.add_chunks(chunks)
     print(f"索引完成：共导入 {count} 个知识块。")

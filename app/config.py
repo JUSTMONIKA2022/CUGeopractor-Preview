@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     llm_api_key: str = ""       # API 密钥（优先读取；为空时回退到 secrets 加密存储）
     llm_timeout: int = 60       # 请求超时（秒）
 
+    # ===== 知识库向量化（Embedding）=====
+    # 默认：使用 ChromaDB 内置本地 ONNX 小模型（免密钥、数据不出本机、首次自动下载权重），
+    # 开箱即用；如需更强效果或远程向量化，配置以下三项后改用 OpenAI 兼容 /embeddings 接口。
+    embedding_base_url: str = ""   # 外部 embedding API 地址（配置后启用；留空用内置模型）
+    embedding_api_key: str = ""    # 外部 embedding API 密钥（仅外部模式使用）
+    embedding_model: str = ""      # 外部 embedding 模型名（如 text-embedding-3-small）
+
     # ===== 本地服务配置 =====
     host: str = "127.0.0.1"     # Web UI 监听地址（安全要求：默认仅本机，勿轻易对外开放）
     port: int = 8080            # Web UI 端口

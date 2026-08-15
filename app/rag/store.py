@@ -3,8 +3,9 @@
 
 设计说明：
     - 使用 chromadb 的本地持久化模式，全部数据存放在 data/ 目录，不入库、不出本机；
-    - 未配置任何嵌入模型/API：MVP 采用 ChromaDB 内置的默认嵌入函数（本地 sentence-transformers
-      自动下载最小模型）以保持零密钥可用；文档中说明如需更强效果可切换嵌入后端。
+    - 向量化默认使用 ChromaDB 内置的默认嵌入函数（本地 ONNX 小模型，免密钥，
+      首次使用自动下载权重）；也可通过 build_embedding_function 按配置切换到
+      OpenAI 兼容 /embeddings 外部接口（更强模型或远程向量化）。
     - 接口保持极简：add_chunks / query / clear，便于上层（retriever / CLI）调用。
 """
 
@@ -18,24 +19,57 @@ from chromadb.utils import embedding_functions
 from app.rag.loader import DocumentChunk
 
 
+def build_embedding_function(settings) -> object:
+    """按配置构建向量化函数（EmbeddingFunction）。
+
+    设计：
+        - 默认：ChromaDB 内置 ONNX 小模型（免密钥、本地运行、数据不出本机），
+          首次使用自动下载权重到本机缓存；
+        - 若配置了 EMBEDDING_BASE_URL：改用 OpenAI 兼容 /embeddings 接口
+          （api_key 留空时使用占位符，适配本地服务如 Ollama 的免鉴权模式）。
+
+    参数：
+        settings: 全局配置（读取 embedding_base_url / api_key / model 字段）
+    返回：
+        chromadb 可用的 EmbeddingFunction 实例。
+    """
+    base_url = (settings.embedding_base_url or "").strip()
+    if not base_url:
+        # 零密钥默认路径：本地内置模型
+        return embedding_functions.DefaultEmbeddingFunction()
+    api_key = (settings.embedding_api_key or "").strip() or "not-needed"
+    model = (settings.embedding_model or "").strip() or "text-embedding-3-small"
+    return embedding_functions.OpenAIEmbeddingFunction(
+        api_key=api_key,
+        api_base=base_url.rstrip("/"),
+        model_name=model,
+    )
+
+
 class VectorStore:
     """本地向量库（持久化于 data/vectorstore）。"""
 
-    def __init__(self, data_dir: str | Path = "data", collection_name: str = "knowledge") -> None:
+    def __init__(
+        self,
+        data_dir: str | Path = "data",
+        collection_name: str = "knowledge",
+        embedding_function: object | None = None,
+    ) -> None:
         """初始化并加载（或创建）指定 collection。
 
         参数：
-            data_dir:       数据根目录（向量库存放于其下 vectorstore/ 子目录）
-            collection_name: 集合名，默认 knowledge
+            data_dir:         数据根目录（向量库存放于其下 vectorstore/ 子目录）
+            collection_name:  集合名，默认 knowledge
+            embedding_function: 向量化函数（默认 ChromaDB 内置 ONNX 小模型；
+                                也可传入 build_embedding_function(settings) 的结果）
         """
         base = Path(data_dir)
         base.mkdir(parents=True, exist_ok=True)
-        # 使用默认嵌入函数：本地 ONNX 小模型，无需 API Key（首次使用会下载模型权重）
-        ef = embedding_functions.DefaultEmbeddingFunction()
+        ef = embedding_function or embedding_functions.DefaultEmbeddingFunction()
         self._client = chromadb.PersistentClient(path=str(base / "vectorstore"))
         self._collection = self._client.get_or_create_collection(
             name=collection_name,
-            embedding_function=ef,
+            embedding_function=ef,  # type: ignore[arg-type]
             metadata={"hnsw:space": "cosine"},  # 余弦相似度检索
         )
 
@@ -74,5 +108,11 @@ class VectorStore:
         return self._collection.count()
 
     def clear(self) -> None:
-        """清空当前集合（重建索引前调用）。"""
-        self._collection.delete(where={})
+        """清空当前集合（重建索引前调用）。
+
+        说明：新版 chromadb 不再支持 delete(where={}) 全量删除，
+        改为先取全部 id 再按 id 删除，兼容性更好。
+        """
+        ids = self._collection.get()["ids"]
+        if ids:
+            self._collection.delete(ids=ids)
